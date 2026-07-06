@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AutoSkip</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <main class="panel">
+
+    <header class="masthead">
+      <svg class="logo" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 5v14l8-7z" />
+        <path d="M12 5v14l8-7z" />
+      </svg>
+      <div class="masthead-text">
+        <h1>AutoSkip</h1>
+        <p id="status-line">Watching for skip buttons</p>
+      </div>
+      <label class="switch master" title="Master switch">
+        <input type="checkbox" id="enabled" />
+        <span class="track"></span>
+      </label>
+    </header>
+
+    <section class="features" id="features" aria-label="Skip preferences">
+      <label class="row">
+        <div class="row-text">
+          <span class="row-title">Skip intro</span>
+          <span class="row-sub">Openings, title sequences, songs</span>
+        </div>
+        <span class="switch"><input type="checkbox" id="skipIntro" /><span class="track"></span></span>
+      </label>
+
+      <label class="row">
+        <div class="row-text">
+          <span class="row-title">Skip recap</span>
+          <span class="row-sub">“Previously on…” segments</span>
+        </div>
+        <span class="switch"><input type="checkbox" id="skipRecap" /><span class="track"></span></span>
+      </label>
+
+      <label class="row">
+        <div class="row-text">
+          <span class="row-title">Skip credits</span>
+          <span class="row-sub">Outros and end-credit previews</span>
+        </div>
+        <span class="switch"><input type="checkbox" id="skipCredits" /><span class="track"></span></span>
+      </label>
+
+      <label class="row binge">
+        <div class="row-text">
+          <span class="row-title">Binge mode</span>
+          <span class="row-sub">Auto-play the next episode</span>
+        </div>
+        <span class="switch"><input type="checkbox" id="nextEpisode" /><span class="track"></span></span>
+      </label>
+    </section>
+
+    <footer class="foot">
+      Works on Netflix, JioHotstar, Prime Video, Disney+ &amp; most streaming sites
+    </footer>
+
+  </main>
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -140,12 +140,21 @@
   }
 
   function categoryFromText(el) {
-    const text = (el.textContent || el.getAttribute("aria-label") || "")
-      .replace(/\s+/g, " ")
-      .trim();
-    if (!text || text.length > 40) return null; // real skip buttons are short
-    for (const { re, category } of TEXT_PATTERNS) {
-      if (re.test(text)) return category;
+    // Check ALL text sources, not just the first non-empty one.
+    // Players like Hotstar render an icon glyph as textContent and put
+    // the real label ("Skip Intro") in aria-label or title.
+    const sources = [
+      el.textContent,
+      el.getAttribute("aria-label"),
+      el.getAttribute("title")
+    ];
+    for (const raw of sources) {
+      if (!raw) continue;
+      const text = raw.replace(/\s+/g, " ").trim();
+      if (!text || text.length > 40) continue; // real skip labels are short
+      for (const { re, category } of TEXT_PATTERNS) {
+        if (re.test(text)) return category;
+      }
     }
     return null;
   }

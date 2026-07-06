@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "AutoSkip — Skip Intros Everywhere",
-  "version": "1.0.0",
+  "name": "AutoSkip â€” Skip Intros Everywhere",
+  "version": "1.0.1",
   "description": "Automatically clicks Skip Intro, Skip Recap, Skip Credits and Next Episode buttons on Netflix, JioHotstar, Prime Video and any streaming site.",
   "permissions": ["storage"],
   "icons": {

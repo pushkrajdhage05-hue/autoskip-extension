@@ -120,7 +120,27 @@
   // Click machinery
   // ------------------------------------------------------------------
   const COOLDOWN_MS = 5000; // per category, prevents click spam
+  const NEXT_EPISODE_WINDOW_S = 180; // binge mode may only fire in the last 3 min
   const lastClick = {};      // category -> timestamp
+
+  // Player transport controls that must NEVER be auto-clicked, even though
+  // their aria-labels say things like "Next Episode". These are the buttons
+  // in the seek bar that appear whenever playback controls are shown
+  // (e.g. when the user presses space to pause).
+  const NEVER_CLICK =
+    '[data-uia="control-next"], [data-uia="control-prev"], ' +
+    '[data-uia^="control-"], .atvwebplayersdk-nexttitle-button';
+
+  // Binge mode should only advance episodes near the END of one, never
+  // mid-playback. Returns true if any playing video is in its final window.
+  function nearEpisodeEnd() {
+    for (const v of document.querySelectorAll("video")) {
+      if (v.duration && isFinite(v.duration) && v.duration > 0) {
+        if (v.duration - v.currentTime <= NEXT_EPISODE_WINDOW_S) return true;
+      }
+    }
+    return false;
+  }
 
   function isVisible(el) {
     if (!el || !el.isConnected) return false;
@@ -162,6 +182,12 @@
   function tryClick(el, category) {
     if (!settings.enabled) return false;
     if (!category || !settings[category]) return false;
+
+    // Never touch player transport controls (seek-bar next/prev buttons)
+    if (el.matches?.(NEVER_CLICK) || el.closest?.(NEVER_CLICK)) return false;
+
+    // Binge mode: only auto-advance near the end of an episode
+    if (category === CATEGORY.NEXT && !nearEpisodeEnd()) return false;
 
     const now = Date.now();
     if (lastClick[category] && now - lastClick[category] < COOLDOWN_MS) return false;

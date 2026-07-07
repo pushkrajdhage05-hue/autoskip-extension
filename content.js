@@ -64,7 +64,11 @@
       rules: [
         // Hotstar/Jio class names churn often; rely mostly on text matching,
         // but these aria-label patterns have been stable.
-        { selector: 'button[aria-label*="Skip" i]', category: "BY_TEXT" }
+        { selector: 'button[aria-label*="Skip" i]', category: "BY_TEXT" },
+        // Hotstar's "Next Episode" is an always-present control-bar button
+        // that hides with the controls; allowHidden lets binge mode click it
+        // (protected by the tight NEXT_CONTROL_WINDOW_S gate).
+        { selector: 'button, [role="button"]', category: "BY_TEXT", allowHidden: true }
       ]
     },
     {
@@ -121,6 +125,7 @@
   // ------------------------------------------------------------------
   const COOLDOWN_MS = 5000; // per category, prevents click spam
   const NEXT_EPISODE_WINDOW_S = 180; // binge mode may only fire in the last 3 min
+  const NEXT_CONTROL_WINDOW_S = 30;  // always-present controls: only last 30s / ended
   const MIN_MAIN_VIDEO_S = 300; // ignore preview/trailer videos shorter than 5 min
   const lastClick = {};      // category -> timestamp
 
@@ -136,12 +141,13 @@
   // mid-playback. Only the main feature video counts (previews/trailers
   // lingering in the DOM are ignored), and a paused video never advances:
   // if the user paused, the user is in charge.
-  function nearEpisodeEnd() {
+  function nearEpisodeEnd(windowS) {
     for (const v of document.querySelectorAll("video")) {
       if (!v.duration || !isFinite(v.duration)) continue; // no metadata / live
       if (v.duration < MIN_MAIN_VIDEO_S) continue;         // stray preview clip
+      if (v.ended) return true;                            // fully finished counts
       if (v.paused) continue;                              // user paused: hands off
-      if (v.duration - v.currentTime <= NEXT_EPISODE_WINDOW_S) return true;
+      if (v.duration - v.currentTime <= windowS) return true;
     }
     return false;
   }
@@ -183,19 +189,24 @@
     return null;
   }
 
-  function tryClick(el, category) {
+  function tryClick(el, category, allowHidden = false) {
     if (!settings.enabled) return false;
     if (!category || !settings[category]) return false;
 
     // Never touch player transport controls (seek-bar next/prev buttons)
     if (el.matches?.(NEVER_CLICK) || el.closest?.(NEVER_CLICK)) return false;
 
-    // Binge mode: only auto-advance near the end of an episode
-    if (category === CATEGORY.NEXT && !nearEpisodeEnd()) return false;
+    // Binge mode: only auto-advance near the end of an episode.
+    // Always-present control-bar buttons (allowHidden) use a much tighter
+    // window so we never chop off real content.
+    if (category === CATEGORY.NEXT) {
+      const win = allowHidden ? NEXT_CONTROL_WINDOW_S : NEXT_EPISODE_WINDOW_S;
+      if (!nearEpisodeEnd(win)) return false;
+    }
 
     const now = Date.now();
     if (lastClick[category] && now - lastClick[category] < COOLDOWN_MS) return false;
-    if (!isVisible(el)) return false;
+    if (allowHidden ? !el.isConnected : !isVisible(el)) return false;
 
     lastClick[category] = now;
     try {
@@ -231,7 +242,7 @@
     // 1. Site-specific rules
     const rules = activeSiteRules();
     if (rules) {
-      for (const { selector, category } of rules) {
+      for (const { selector, category, allowHidden } of rules) {
         let els;
         try {
           els = document.querySelectorAll(selector);
@@ -240,7 +251,10 @@
         }
         for (const el of els) {
           const cat = category === "BY_TEXT" ? categoryFromText(el) : category;
-          if (tryClick(el, cat)) return; // one click per scan is plenty
+          // allowHidden only ever applies to binge-mode clicks, which are
+          // protected by the end-of-episode time gate.
+          const hiddenOk = allowHidden === true && cat === CATEGORY.NEXT;
+          if (tryClick(el, cat, hiddenOk)) return; // one click per scan is plenty
         }
       }
     }

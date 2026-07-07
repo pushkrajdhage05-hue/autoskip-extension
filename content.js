@@ -121,6 +121,7 @@
   // ------------------------------------------------------------------
   const COOLDOWN_MS = 5000; // per category, prevents click spam
   const NEXT_EPISODE_WINDOW_S = 180; // binge mode may only fire in the last 3 min
+  const MIN_MAIN_VIDEO_S = 300; // ignore preview/trailer videos shorter than 5 min
   const lastClick = {};      // category -> timestamp
 
   // Player transport controls that must NEVER be auto-clicked, even though
@@ -132,12 +133,15 @@
     '[data-uia^="control-"], .atvwebplayersdk-nexttitle-button';
 
   // Binge mode should only advance episodes near the END of one, never
-  // mid-playback. Returns true if any playing video is in its final window.
+  // mid-playback. Only the main feature video counts (previews/trailers
+  // lingering in the DOM are ignored), and a paused video never advances:
+  // if the user paused, the user is in charge.
   function nearEpisodeEnd() {
     for (const v of document.querySelectorAll("video")) {
-      if (v.duration && isFinite(v.duration) && v.duration > 0) {
-        if (v.duration - v.currentTime <= NEXT_EPISODE_WINDOW_S) return true;
-      }
+      if (!v.duration || !isFinite(v.duration)) continue; // no metadata / live
+      if (v.duration < MIN_MAIN_VIDEO_S) continue;         // stray preview clip
+      if (v.paused) continue;                              // user paused: hands off
+      if (v.duration - v.currentTime <= NEXT_EPISODE_WINDOW_S) return true;
     }
     return false;
   }
